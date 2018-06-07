@@ -9,6 +9,8 @@
 #define POTENCIOMETRO	2
 #define MAX_SET_POINT 	1500
 
+int ajusta_duty(int duty, int set_point, int leitura);
+int verifica_set_point(int duty);
 
 int main(){
 	init_analog_pins();
@@ -21,25 +23,38 @@ int main(){
 
 	while(1){
 		set_point = get_value_ain(POTENCIOMETRO);
+
 		leitura = get_value_ain(LDR_SENSOR);
 
-		if(set_point > MAX_SET_POINT){
-			set_point = MAX_SET_POINT;
-		}
+		set_point = verifica_set_point(set_point);
 
-		if(leitura < set_point){
-			duty++;
-		}
-		else if(leitura > set_point){
-			duty--;
-		}
-
-		if(duty < MIN_DUTY | duty > MAX_DUTY){
-			duty = MIN_DUTY;
-		}
+		duty = ajusta_duty(duty, set_point, leitura);
 
 		set_pwm_duty(duty);
+
 		pwm = ((double) duty/ (double) PERIOD) * 100;
+
 		printf("Set Point: %d | Sensor: %d | PWM: %.2lf%\n", set_point, leitura, pwm);
 	}
+}
+
+int ajusta_duty(int duty, int set_point, int leitura){
+	if(leitura < set_point){
+			duty++;
+	}
+	else if(leitura > set_point){
+			duty--;
+	}
+
+	if(duty < MIN_DUTY | duty > MAX_DUTY){
+		return MIN_DUTY;
+	}
+	return duty;
+}
+
+int verifica_set_point(int set_point){
+	if(set_point > MAX_SET_POINT){
+		return MAX_SET_POINT;
+	}
+	return set_point;
 }
