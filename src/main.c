@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "embedded_linux.h"
+#include "lcd_16x2.h"
 
 #define PERIOD 			2500
 #define MIN_DUTY		0
@@ -17,25 +18,23 @@ double error_meas,
 	   integral = 0,
 	   derivative = 0,
 	   PID,
-	   tempo;
+	   tempo,
+	   pwm;
 
 int measure,
     lastMeasure,
     duty = 0,
     set_point;
 
+char msg1[16], msg2[16];
+
 int verifica_set_point(int duty);
 void pid_control();
+void atualiza_display();
+void init_system();
 
 int main(){
-	init_analog_pins();
-	config_pwm();
-	set_pwm_period(PERIOD);
-	set_pwm_duty(MIN_DUTY);
-	init_pwm();
-	int leitura;
-	double pwm;
-
+	init_system();
 	clock_t Ticks[2];
     Ticks[0] = clock();
 
@@ -54,10 +53,33 @@ int main(){
 
 		set_pwm_duty(duty);
 
-		pwm = ((double) duty/ (double) PERIOD) * 100;
+		pwm = ((double) duty / (double) PERIOD) * 100;
 
-		printf("Set Point: %d | Sensor: %d | PWM: %.2lf%\n", set_point, measure, pwm);
+		atualiza_display();
+
+		usleep(10000);
 	}
+}
+
+void init_system(){
+	initLCD();
+	init_analog_pins();
+	config_pwm();
+	set_pwm_period(PERIOD);
+	set_pwm_duty(MIN_DUTY);
+	init_pwm();
+}
+
+void atualiza_display(){
+	sprintf(msg1, " LDR: %d/%d", set_point, measure);
+	sprintf(msg2, " PWM: %.2lf", pwm);
+
+	clear_lcd();
+	selectLine(1,1);
+	writeLCD(msg1);
+	selectLine(2,1);
+	writeLCD(msg2);
+	sendASCII("%");
 }
 
 int verifica_set_point(int set_point){
